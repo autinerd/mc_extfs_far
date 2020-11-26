@@ -13,6 +13,7 @@ archivename = sys.argv[2]
 dirname = storedfilename = sys.argv[3] if len(sys.argv) > 3 else None
 extractto = sourcefile = sys.argv[4] if len(sys.argv) > 4 else None
 
+# open archive file
 with open(archivename, 'r+b') as archive:
     if archive.read(8) != b'FAR!byAZ':
         sys.stderr.write(f'Wrong header!\n')
@@ -41,11 +42,13 @@ with open(archivename, 'r+b') as archive:
         filelist.append((filename, size1, start_offset))
 
     if command == 'list':
+        # list files for mc
         for item in filelist:
             print(
                 f'-rwxrwxrwx 1 {os.getuid():08} {os.getgid():08} {item[1]} {timestr} {item[0]}')
         exit(0)
     elif command == 'copyout':
+        # extract file from archive
         files = [item for item in filelist if item[0] == storedfilename]
         if len(files) != 1:
             sys.stderr.write('There has to be a single file to extract!\n')
@@ -54,6 +57,24 @@ with open(archivename, 'r+b') as archive:
             archive.seek(files[0][2])
             dest.write(archive.read(files[0][1]))
             exit(0)
+    elif command == 'copyin':
+        with open(sourcefile, 'rb') as sfile:
+            archive.seek(filetable_offset)
+            filetable_buf = archive.read()
+            archive.seek(filetable_offset)
+            archive.write(sfile.read())
+            new_filetable_offset = archive.tell()
+            archive.seek(12)
+            archive.write(struct.pack('<L', new_filetable_offset))
+            archive.seek(new_filetable_offset)
+            archive.write(filetable_buf)
+            archive.seek(new_filetable_offset)
+            archive.write(struct.pack('<L', file_count + 1))
+            archive.seek(0, 2)
+            archive.write(struct.pack('<LLLL', os.path.getsize(sourcefile), os.path.getsize(sourcefile), filetable_offset, len(storedfilename)))
+            archive.write(bytes(storedfilename, encoding='ascii'))
+            exit(0)
+
     sys.stderr.write(f'Wrong command {command}\n')
     exit(1)
 
