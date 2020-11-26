@@ -72,8 +72,11 @@ with open(archivename, 'r+b') as archive:
             archive.write(struct.pack('<L', file_count + 1))
             archive.seek(0, 2)
             archive.write(struct.pack('<LLLL', os.path.getsize(sourcefile), os.path.getsize(sourcefile), filetable_offset, len(storedfilename)))
-            archive.write(bytes(storedfilename, encoding='ascii'))
+            archive.write(bytes(storedfilename.replace('/', '\\'), encoding='ascii'))
             exit(0)
+    elif command == 'mkdir':
+        # there are no directories as items, the path is in the file names
+        exit(0)
 
     sys.stderr.write(f'Wrong command {command}\n')
     exit(1)
