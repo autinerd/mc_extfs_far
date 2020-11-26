@@ -1,0 +1,1 @@
+# Midnight Commander extfs for Sims 1 FAR archives
